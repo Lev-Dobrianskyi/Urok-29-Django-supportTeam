@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="detail-container">
+    <div class="detail-header">
+        <h2>{{ report.title }}</h2>
+        <div class="actions">
+            {% if can_reopen %}
+                <form action="{% url 'change_status' report.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="inProgress">
+                    <button type="submit" class="btn btn-primary">Reopen Ticket</button>
+                </form>
+            {% endif %}
+
+            {% if can_edit %}
+                <a href="{% url 'report_update' report.pk %}" class="btn">Edit Ticket</a>
+            {% endif %}
+            {% if can_assign %}
+                <a href="{% url 'assign_agent' report.pk %}" class="btn">Assign Agent</a>
+            {% endif %}
+            {% if can_take %}
+                <form action="{% url 'take_ticket' report.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Take Ticket</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-info">
+        <p><strong>Status:</strong> <span class="badge badge-{{ report.status }}">{{ report.status }}</span></p>
+        <p><strong>Priority:</strong> <span class="badge badge-{{ report.priority }}">{{ report.priority }}</span></p>
+        <p><strong>Category:</strong> {{ report.category.name|default:"N/A" }}</p>
+        <p><strong>Author:</strong> {{ report.author.username }}</p>
+        <p><strong>Agent:</strong> {{ report.agent.username|default:"Unassigned" }}</p>
+        <p><strong>Description:</strong></p>
+        <p class="description">{{ report.description }}</p>
+    </div>
+
+    {% if allowed_transitions %}
+    <div class="status-change">
+        <h3>Change Status</h3>
+        <form action="{% url 'change_status' report.pk %}" method="post">
+            {% csrf_token %}
+            <select name="status">
+                {% for status in allowed_transitions %}
+                    <option value="{{ status }}">
+                        {% if status == 'inProgress' %}In Progress
+                        {% elif status == 'awaiting' %}Awaiting Reply
+                        {% elif status == 'done' %}Done
+                        {% elif status == 'closed' %}Closed
+                        {% elif status == 'denied' %}Denied
+                        {% else %}{{ status }}
+                        {% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Update Status</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="comments-section">
+        <h3>Comments</h3>
+        {% for comment in comments %}
+            <div class="comment {% if comment.secret %}secret-comment{% endif %}">
+                <div class="comment-meta">
+                    <strong>{{ comment.author.username }}</strong> - {{ comment.dateOfCreation|date:"Y-m-d H:i" }}
+                    {% if comment.secret %}<span class="badge badge-critical">Internal Note</span>{% endif %}
+                </div>
+                <div class="comment-text">{{ comment.text }}</div>
+            </div>
+        {% empty %}
+            <p>No comments yet.</p>
+        {% endfor %}
+        
+        {% if report.status != 'closed' and report.status != 'denied' %}
+            <h4>Add Comment</h4>
+            <form action="{% url 'add_comment' report.pk %}" method="post" class="comment-form">
+                {% csrf_token %}
+                {{ comment_form.as_p }}
+                <button type="submit" class="btn btn-primary">Submit Comment</button>
+            </form>
+        {% else %}
+            <p><em>This ticket is closed. Comments are disabled.</em></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

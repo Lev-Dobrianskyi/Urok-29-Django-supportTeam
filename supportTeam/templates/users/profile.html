@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="profile-header">
+    <h2>Profile: {{ profile_user.username }}</h2>
+    <a href="{% url 'profile_edit' %}" class="btn">Edit Profile</a>
+</div>
+
+{% if profile_user.role == 'client' %}
+    <h3>Your Tickets</h3>
+    <ul>
+        {% for report in reports %}
+            <li><a href="{% url 'report_detail' report.pk %}">{{ report.title }}</a> - {{ report.status }}</li>
+        {% empty %}
+            <li>No tickets found.</li>
+        {% endfor %}
+    </ul>
+{% elif profile_user.role == 'agent' %}
+    <h3>Assigned Tickets</h3>
+    <p>Total Resolved Tickets: {{ resolved_count }}</p>
+    <ul>
+        {% for report in reports %}
+            <li><a href="{% url 'report_detail' report.pk %}">{{ report.title }}</a> - {{ report.status }}</li>
+        {% empty %}
+            <li>No assigned tickets.</li>
+        {% endfor %}
+    </ul>
+{% elif profile_user.role == 'manager' %}
+    <h3>System Statistics</h3>
+    <h4>Tickets by Status</h4>
+    <ul>
+        {% for stat in status_stats %}
+            <li>{{ stat.status }}: {{ stat.count }}</li>
+        {% endfor %}
+    </ul>
+    <h4>Tickets per Agent</h4>
+    <ul>
+        {% for agent in agent_stats %}
+            <li>{{ agent.username }}: {{ agent.ticket_count }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}
